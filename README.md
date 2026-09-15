@@ -8,7 +8,7 @@ fixed-rate bond's price response to changes in yield.
 Clone the repository, enter its directory, and install the dependencies:
 
 ```shell
-git clone https://github.com/<username>/duration-convexity-analyzer.git
+git clone https://github.com/colinlpaterson/duration-convexity-analyzer.git
 cd duration-convexity-analyzer
 python -m pip install -r requirements.txt
 ```
