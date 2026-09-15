@@ -1,0 +1,4 @@
+streamlit>=1.57,<2
+plotly>=5.22,<7
+numpy>=1.26,<3
+pytest>=8,<9
