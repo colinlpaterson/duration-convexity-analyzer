@@ -101,3 +101,57 @@ def test_duration_only_estimate_underestimates_price(shift):
         price, modified, convexity, YTM, np.array([YTM + shift])
     )
     assert duration_est[0] < exact
+
+
+@pytest.mark.parametrize(
+    "kwargs, message",
+    [
+        ({"payments_per_year": 0}, "payments_per_year must be positive"),
+        ({"payments_per_year": -2}, "payments_per_year must be positive"),
+        ({"payments_per_year": 2.0}, "payments_per_year must be an integer"),
+        ({"payments_per_year": True}, "payments_per_year must be an integer"),
+        ({"face_value": 0.0}, "face_value must be positive"),
+        ({"face_value": float("nan")}, "face_value must be positive"),
+        ({"coupon_rate": -0.01}, "coupon_rate must be non-negative"),
+        ({"maturity_years": 0.0}, "maturity_years must be positive"),
+        ({"maturity_years": 2.3}, "whole number of coupon periods"),
+        ({"maturity_years": 0.25}, "whole number of coupon periods"),
+    ],
+)
+def test_cash_flows_rejects_invalid_terms(kwargs, message):
+    terms = {
+        "face_value": FACE,
+        "coupon_rate": COUPON,
+        "maturity_years": MATURITY,
+        "payments_per_year": FREQ,
+    } | kwargs
+    with pytest.raises(ValueError, match=message):
+        cash_flows(**terms)
+
+
+def test_cash_flows_accepts_fractional_whole_period_maturity():
+    times, _ = cash_flows(FACE, COUPON, 2.5, FREQ)
+    assert times[-1] == pytest.approx(2.5)
+
+
+@pytest.mark.parametrize("bad_yield", [-2.0, -2.5, float("nan"), float("inf")])
+def test_bond_price_rejects_invalid_yield(bad_yield):
+    with pytest.raises(ValueError, match="yield_to_maturity"):
+        bond_price(FACE, COUPON, MATURITY, bad_yield, FREQ)
+
+
+def test_bond_price_rejects_invalid_yield_in_array():
+    with pytest.raises(ValueError, match="yield_to_maturity"):
+        bond_price(FACE, COUPON, MATURITY, np.array([0.05, -3.0]), FREQ)
+
+
+@pytest.mark.parametrize("bad_yield", [-2.0, float("nan")])
+def test_risk_measures_rejects_invalid_yield(bad_yield):
+    with pytest.raises(ValueError, match="yield_to_maturity"):
+        risk_measures(FACE, COUPON, MATURITY, bad_yield, FREQ)
+
+
+def test_small_negative_yield_is_allowed():
+    # Negative yields above -payments_per_year are economically possible.
+    price = bond_price(FACE, COUPON, MATURITY, -0.005, FREQ)
+    assert price > FACE
